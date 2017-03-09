@@ -13,7 +13,7 @@ public class firebaseUtils {
 
     public static void addPhoto(Photo photo){
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference photoRef = database.getReference("photo");
-        photoRef.child("basic").setValue(photo);
+        DatabaseReference photoRef = database.getReference("photos");
+        photoRef.child("picture").setValue(photo);
     }
 }

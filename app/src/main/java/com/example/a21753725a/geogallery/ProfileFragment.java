@@ -38,7 +38,8 @@ public class ProfileFragment extends Fragment {
     View view;
     MapView map;
     String mCurrentPhotoPath;
-    Photo photo;
+
+    GpsTracker gps;
 
     static final int REQUEST_TAKE_PHOTO = 1;
     static final int PERMISSION_LOCATION_REQUEST_CODE = 8;
@@ -50,15 +51,8 @@ public class ProfileFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.fragment_profile, container, false);
-        //check storage permission
-        if (ActivityCompat.checkSelfPermission(this.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this.getActivity(),
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION},
-                    PERMISSION_LOCATION_REQUEST_CODE);
-        }
 
+        gps  = new GpsTracker(this.getContext());
         map = (MapView) view.findViewById(R.id.map);
 
         initializeMap();
@@ -67,13 +61,7 @@ public class ProfileFragment extends Fragment {
         FloatingActionButton fab = (FloatingActionButton) view.findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-
-
                 dispatchTakePictureIntent();
-                if (mCurrentPhotoPath != photo.getPath()) {
-                    firebaseUtils.addPhoto(photo);
-                }
-
             }
         });
 
@@ -93,11 +81,17 @@ public class ProfileFragment extends Fragment {
             try {
                 photoFile = createImageFile();
             } catch (Exception ex) {
+                ex.printStackTrace();
             }
             if (photoFile != null) {
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
                         Uri.fromFile(photoFile));
                 startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+                Photo photo = new Photo();
+                photo.setLat(gps.getLatitude());
+                photo.setLon(gps.getLongitude());
+                photo.setPath(mCurrentPhotoPath);
+                firebaseUtils.addPhoto(photo);
             }
         }
     }
@@ -116,7 +110,7 @@ public class ProfileFragment extends Fragment {
 
         // Save a file: path for use with ACTION_VIEW intents
         mCurrentPhotoPath = "file:" + image.getAbsolutePath();
-        photo.setPath(mCurrentPhotoPath);
+
         return image;
     }
 
@@ -128,44 +122,18 @@ public class ProfileFragment extends Fragment {
     }
 
     private void setCurrentLocation() {
-        // Get the location manager
-        LocationManager locationManager = (LocationManager)
-                getContext().getSystemService(LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-        String bestProvider = locationManager.getBestProvider(criteria, false);
-        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this.getActivity(),
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_LOCATION_REQUEST_CODE);
-            return;
-        }
-        Location location = locationManager.getLastKnownLocation(bestProvider);
-        LocationListener loc_listener = new LocationListener() {
 
-            public void onLocationChanged(Location l) {}
 
-            public void onProviderEnabled(String p) {}
-
-            public void onProviderDisabled(String p) {}
-
-            public void onStatusChanged(String p, int status, Bundle extras) {}
-        };
-        locationManager
-                .requestLocationUpdates(bestProvider, 0, 0, loc_listener);
-        location = locationManager.getLastKnownLocation(bestProvider);
         IMapController mapController = map.getController();
         double lat;
         double lon;
         try {
-            lat = location.getLatitude();
-            lon = location.getLongitude();
-
-        } catch (NullPointerException e) {
+            lat = gps.getLatitude();
+            lon = gps.getLongitude();
+        } catch (Exception e) {
             lat = -1.0;
             lon = -1.0;
         }
-        photo.setLat(lat);
-        photo.setLon(lon);
         mapController.setZoom(20);
         mapController.setCenter(new GeoPoint(lat,lon));
     }
