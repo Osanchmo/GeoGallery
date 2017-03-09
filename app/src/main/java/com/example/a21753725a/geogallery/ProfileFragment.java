@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import com.bumptech.glide.Glide;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -32,17 +33,23 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+import jp.wasabeef.glide.transformations.BlurTransformation;
+import jp.wasabeef.glide.transformations.CropCircleTransformation;
+
 import static android.app.Activity.RESULT_OK;
 
 public class ProfileFragment extends Fragment {
     View view;
     MapView map;
+    GpsTracker gps;
     String mCurrentPhotoPath;
     FirebaseDatabase database = FirebaseDatabase.getInstance();
     DatabaseReference photoRef = database.getReference("photos");
-    DatabaseReference profPicRef = database.getReference("ProfilePic");
-    DatabaseReference BannerRef = database.getReference("BannerPic");
-    GpsTracker gps;
+    DatabaseReference profPicRef = database.getReference("profilePic");
+    DatabaseReference bannerRef = database.getReference("bannerPic");
+
+    ImageView profilePic;
+    ImageView bannerPic;
     Boolean isProf;
 
     private static final int ACTIVITAT_SELECCIONAR_IMATGE = 2;
@@ -59,6 +66,8 @@ public class ProfileFragment extends Fragment {
         view = inflater.inflate(R.layout.fragment_profile, container, false);
         gps  = new GpsTracker(this.getContext());
         map = (MapView) view.findViewById(R.id.map);
+        profilePic = (ImageView) view.findViewById(R.id.profileImg);
+        bannerPic = (ImageView) view.findViewById(R.id.bgProfile);
 
         initializeMap();
         setCurrentLocation();
@@ -70,8 +79,6 @@ public class ProfileFragment extends Fragment {
                 dispatchTakePictureIntent();
             }
         });
-
-        ImageView profilePic = (ImageView) view.findViewById(R.id.profileImg);
         profilePic.setClickable(true);
         profilePic.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -81,6 +88,14 @@ public class ProfileFragment extends Fragment {
             }
         });
 
+        bannerPic.setClickable(true);
+        bannerPic.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isProf = false;
+                selectImage();
+            }
+        });
         return view;
     }
 
@@ -178,6 +193,27 @@ public class ProfileFragment extends Fragment {
                 error.toException().printStackTrace();
             }
         });
+        profPicRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                ProfilePic pic = dataSnapshot.getValue(ProfilePic.class);
+                Glide.with(getActivity()).load(pic.getPath()).centerCrop().bitmapTransform(
+                        (new CropCircleTransformation(getContext()))).into(profilePic);
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+            }
+        });
+        bannerRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Banner banner  = dataSnapshot.getValue(Banner.class);
+                Glide.with(getActivity()).load(banner.getPath()).centerCrop().into(bannerPic);
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+            }
+        });
 
     }
 
@@ -203,17 +239,16 @@ public class ProfileFragment extends Fragment {
                     cursor.moveToFirst();
 
                     int indexColumna = cursor.getColumnIndex(columna[0]);
-                    if(isProf = true){
+                    if(isProf){
                         ProfilePic pic = new ProfilePic();
                         pic.setPath(cursor.getString(indexColumna));
+                        pic.setName("test");
                         profPicRef.setValue(pic);
-                        isProf = false;
                     }else{
                         Banner pic = new Banner();
                         pic.setPath(cursor.getString(indexColumna));
-                        BannerRef.setValue(pic);
+                        bannerRef.setValue(pic);
                     }
-
                     cursor.close();
                 }
         }
