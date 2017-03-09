@@ -23,6 +23,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import org.osmdroid.api.IMapController;
+import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
@@ -35,6 +36,7 @@ import java.util.Date;
 
 import jp.wasabeef.glide.transformations.BlurTransformation;
 import jp.wasabeef.glide.transformations.CropCircleTransformation;
+import jp.wasabeef.glide.transformations.RoundedCornersTransformation;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -47,7 +49,7 @@ public class ProfileFragment extends Fragment {
     DatabaseReference photoRef = database.getReference("photos");
     DatabaseReference profPicRef = database.getReference("profilePic");
     DatabaseReference bannerRef = database.getReference("bannerPic");
-
+    RadiusMarkerClusterer poiMarkers;
     ImageView profilePic;
     ImageView bannerPic;
     Boolean isProf;
@@ -68,6 +70,13 @@ public class ProfileFragment extends Fragment {
         map = (MapView) view.findViewById(R.id.map);
         profilePic = (ImageView) view.findViewById(R.id.profileImg);
         bannerPic = (ImageView) view.findViewById(R.id.bgProfile);
+        poiMarkers = new RadiusMarkerClusterer(getActivity());
+        ImageView bannerBorder = (ImageView) view.findViewById(R.id.bannerBG);
+        ImageView profileBorder = (ImageView) view.findViewById(R.id.profileBG);
+        Glide.with(getActivity()).load("http://i.imgur.com/ErNyFNv.jpg").bitmapTransform(
+                (new CropCircleTransformation(getContext()))).into(profileBorder);
+
+        Glide.with(getActivity()).load("http://i.imgur.com/ErNyFNv.jpg").into(bannerBorder);
 
         initializeMap();
         setCurrentLocation();
@@ -167,7 +176,7 @@ public class ProfileFragment extends Fragment {
     }
     public void addPhoto(Photo photo){
 
-        photoRef.setValue(photo);
+        photoRef.child("pictures").push().setValue(photo);
     }
 
     public void  LoadPhotoMarkers(){
@@ -175,15 +184,16 @@ public class ProfileFragment extends Fragment {
         photoRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                // This method is called once with the initial value and again
-                // whenever data at this location is updated.
-                Photo photo = dataSnapshot.getValue(Photo.class);
-                Marker startMarker = new Marker(map);
-                startMarker.setPosition(new GeoPoint(photo.getLat(),photo.getLon()));
-                startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                Drawable image = Drawable.createFromPath(photo.getPath());
-                startMarker.setImage(image);
-                map.getOverlays().add(startMarker);
+                for (DataSnapshot postSnapshot: dataSnapshot.child("pictures").getChildren()) {
+                 Photo photo = postSnapshot.getValue(Photo.class);
+                    Marker startMarker = new Marker(map);
+                    startMarker.setPosition(new GeoPoint(photo.getLat(),photo.getLon()));
+                    startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                    startMarker.setInfoWindow(new MyInfoWindow(getContext(),map,photo.getPath()));
+                    poiMarkers.add(startMarker);
+                }
+
+                map.getOverlays().add(poiMarkers);
                 map.invalidate();
             }
 
