@@ -75,7 +75,6 @@ public class ProfileFragment extends Fragment {
         ImageView profileBorder = (ImageView) view.findViewById(R.id.profileBG);
         Glide.with(getActivity()).load("http://i.imgur.com/ErNyFNv.jpg").bitmapTransform(
                 (new CropCircleTransformation(getContext()))).into(profileBorder);
-
         Glide.with(getActivity()).load("http://i.imgur.com/ErNyFNv.jpg").into(bannerBorder);
 
         initializeMap();
@@ -184,9 +183,11 @@ public class ProfileFragment extends Fragment {
         photoRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
+                Drawable d = getResources().getDrawable(R.drawable.ic_photo_camera);
                 for (DataSnapshot postSnapshot: dataSnapshot.child("pictures").getChildren()) {
                  Photo photo = postSnapshot.getValue(Photo.class);
                     Marker startMarker = new Marker(map);
+                    startMarker.setIcon(d);
                     startMarker.setPosition(new GeoPoint(photo.getLat(),photo.getLon()));
                     startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
                     startMarker.setInfoWindow(new MyInfoWindow(getContext(),map,photo.getPath()));

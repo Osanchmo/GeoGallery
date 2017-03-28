@@ -5,6 +5,8 @@ import com.bumptech.glide.Glide;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.infowindow.BasicInfoWindow;
 
+import jp.wasabeef.glide.transformations.CropCircleTransformation;
+
 public class MyInfoWindow extends BasicInfoWindow {
     private Context mContext;
     private String imagePath;
@@ -22,7 +24,8 @@ public class MyInfoWindow extends BasicInfoWindow {
 
             Glide.with(mContext)
                     .load(imagePath)
-                    .centerCrop()
+                    .centerCrop().bitmapTransform(
+                    (new CropCircleTransformation(mContext)))
                     .into(imageView);
 
     }
