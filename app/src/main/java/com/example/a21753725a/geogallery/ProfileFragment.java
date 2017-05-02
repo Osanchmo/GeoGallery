@@ -207,9 +207,15 @@ public class ProfileFragment extends Fragment {
         profPicRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                ProfilePic pic = dataSnapshot.getValue(ProfilePic.class);
-                Glide.with(getActivity()).load(pic.getPath()).centerCrop().bitmapTransform(
-                        (new CropCircleTransformation(getContext()))).into(profilePic);
+
+                    ProfilePic pic = dataSnapshot.getValue(ProfilePic.class);
+                try {
+                    Glide.with(getActivity()).load(pic.getPath()).centerCrop().bitmapTransform(
+                            (new CropCircleTransformation(getContext()))).into(profilePic);
+                }catch (Exception e){
+                    Glide.with(getActivity()).load("https://x1.xingassets.com/assets/frontend_minified/img/users/nobody_m.original.jpg").centerCrop().bitmapTransform(
+                            (new CropCircleTransformation(getContext()))).into(profilePic);
+                }
             }
             @Override
             public void onCancelled(DatabaseError databaseError) {
@@ -219,7 +225,12 @@ public class ProfileFragment extends Fragment {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 Banner banner  = dataSnapshot.getValue(Banner.class);
-                Glide.with(getActivity()).load(banner.getPath()).centerCrop().into(bannerPic);
+                try {
+                    Glide.with(getActivity()).load(banner.getPath()).centerCrop().into(bannerPic);
+                }catch (Exception e){
+                    Glide.with(getActivity()).load("https://x1.xingassets.com/assets/frontend_minified/img/users/nobody_m.original.jpg").centerCrop().bitmapTransform(
+                            (new CropCircleTransformation(getContext()))).into(profilePic);
+                }
             }
             @Override
             public void onCancelled(DatabaseError databaseError) {
